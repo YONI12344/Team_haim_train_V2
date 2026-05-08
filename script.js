@@ -14,7 +14,7 @@
       e.g. yoursite.com/athlete/?athlete=yoni
    ═══════════════════════════════════════════════════════ */
 
-const APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE'
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwNlreVfLu6IDAS-rwplSgA60-5t15_0mwNxegCPhRHRnHU1uonKrAg_fLODNOqqU5fCA/exec'
 
 /* ── Read athlete ID from URL (?athlete=yoni) ── */
 const params = new URLSearchParams(window.location.search)
