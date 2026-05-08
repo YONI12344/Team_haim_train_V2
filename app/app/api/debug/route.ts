@@ -20,7 +20,8 @@ export async function GET() {
       ...checks, 
       connection: error ? `❌ ${error.message}` : '✅ OK' 
     })
-  } catch (e: any) {
-    return NextResponse.json({ ...checks, connection: `❌ ${e.message}` })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return NextResponse.json({ ...checks, connection: `❌ ${msg}` })
   }
 }
