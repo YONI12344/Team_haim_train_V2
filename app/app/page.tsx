@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/EmptyState'
 import type { Workout } from '@/lib/types'
 
 export default async function AthleteDashboard() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 

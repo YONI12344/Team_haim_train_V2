@@ -8,7 +8,7 @@ import { ChevronLeft, UserPlus } from 'lucide-react'
 
 export default async function AthletesPage() {
   await requireCoach()
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: athletes } = await supabase
     .from('profiles')

@@ -4,7 +4,7 @@ import { TeamStatsClient } from './TeamStatsClient'
 
 export default async function TeamStatsPage() {
   await requireCoach()
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: workouts } = await supabase
     .from('workouts')

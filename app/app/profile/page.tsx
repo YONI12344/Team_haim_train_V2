@@ -4,7 +4,7 @@ import { ProfileClient } from './ProfileClient'
 import { getProfile } from '@/lib/auth'
 
 export default async function ProfilePage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 

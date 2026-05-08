@@ -4,14 +4,15 @@ import { createClient } from '@/lib/supabase/server'
 import { AthletePlanEditor } from './AthletePlanEditor'
 import { getWeekStart, formatDateISO } from '@/lib/utils'
 
-export default async function AthletePlanPage({ params }: { params: { id: string } }) {
+export default async function AthletePlanPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   await requireCoach()
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: athlete } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (!athlete) notFound()
@@ -22,14 +23,14 @@ export default async function AthletePlanPage({ params }: { params: { id: string
   let { data: plan } = await supabase
     .from('training_plans')
     .select('*')
-    .eq('athlete_id', params.id)
+    .eq('athlete_id', id)
     .eq('week_start', formatDateISO(weekStart))
     .single()
 
   if (!plan) {
     const { data: newPlan } = await supabase
       .from('training_plans')
-      .insert({ athlete_id: params.id, week_start: formatDateISO(weekStart) })
+      .insert({ athlete_id: id, week_start: formatDateISO(weekStart) })
       .select()
       .single()
     plan = newPlan
