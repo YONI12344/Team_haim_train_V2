@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 220 20% 97%;
+  --foreground: 220 40% 13%;
+  --card: 0 0% 100%;
+  --border: 220 15% 88%;
+  --primary: 220 45% 20%;
+  --primary-soft: 220 38% 26%;
+  --gold: 43 55% 54%;
+  --gold-soft: 43 70% 91%;
+  --muted: 220 10% 45%;
+  --destructive: 0 84% 60%;
+}
+
+html {
+  direction: rtl;
+  background: hsl(var(--background));
+}
+
+body {
+  min-height: 100vh;
+  color: hsl(var(--foreground));
+  background: hsl(var(--background));
+  font-family: 'Heebo', 'Inter', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--gold));
+  border-radius: 3px;
+}
+
+/* Gold focus ring */
+*:focus-visible {
+  outline: 2px solid hsl(var(--gold));
+  outline-offset: 2px;
+}
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
+}
