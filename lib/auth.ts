@@ -14,6 +14,12 @@ export async function getProfile(): Promise<Profile | null> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
+  // Determine correct role from env var
+  const coachEmails = (process.env.COACH_EMAILS || 'info.teamhaim@gmail.com')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+  const correctRole = coachEmails.includes((user.email ?? '').toLowerCase()) ? 'coach' : 'athlete'
+
   // Step 2: read profile via service client (bypasses RLS — no recursion risk)
   const service = await createServiceClient()
   const { data, error } = await service
@@ -22,7 +28,19 @@ export async function getProfile(): Promise<Profile | null> {
     .eq('id', user.id)
     .maybeSingle()
 
-  if (data) return data
+  if (data) {
+    // Fix role if it doesn't match the coach email list
+    if (data.role !== correctRole) {
+      const { data: updatedProfile } = await service
+        .from('profiles')
+        .update({ role: correctRole })
+        .eq('id', user.id)
+        .select('*')
+        .single()
+      return updatedProfile ?? { ...data, role: correctRole }
+    }
+    return data
+  }
 
   if (error) {
     console.error('Profile lookup failed:', error.message)
@@ -30,12 +48,6 @@ export async function getProfile(): Promise<Profile | null> {
   }
 
   // Profile doesn't exist yet — create it
-  // Determine correct role: check coach emails env var first, then fallback to athlete
-  const coachEmails = (process.env.COACH_EMAILS || 'info.teamhaim@gmail.com')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-  const isCoach = coachEmails.includes((user.email ?? '').toLowerCase())
-
   const fullName =
     typeof user.user_metadata?.full_name === 'string'
       ? user.user_metadata.full_name
@@ -46,7 +58,7 @@ export async function getProfile(): Promise<Profile | null> {
     .insert({
       id: user.id,
       full_name: fullName,
-      role: isCoach ? 'coach' : 'athlete',
+      role: correctRole,
     })
     .select('*')
     .single()
