@@ -11,8 +11,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=no_code`)
   }
 
-  // We must collect cookies BEFORE creating the redirect response
-  const cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[] = []
+  let response = NextResponse.redirect(`${origin}/app`)
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,11 +21,16 @@ export async function GET(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(incoming) {
-          // Collect cookies — apply them to the response after we build it
-          incoming.forEach(({ name, value, options }) => {
-            cookiesToSet.push({ name, value, options: options as Record<string, unknown> })
-          })
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          response = NextResponse.redirect(`${origin}/app`)
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, {
+              ...options,
+              httpOnly: true,
+              path: '/',
+            })
+          )
         },
       },
     }
@@ -36,22 +40,10 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error('Callback error:', error.message)
-    return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+    return NextResponse.redirect(
+      `${origin}/login?error=auth_failed&message=${encodeURIComponent(error.message)}`
+    )
   }
-
-  // Build the redirect response AFTER session exchange so all cookies are known
-  const response = NextResponse.redirect(`${origin}/app`)
-
-  // Apply all session cookies to the response
-  cookiesToSet.forEach(({ name, value, options }) => {
-    response.cookies.set(name, value, {
-      ...options,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      path: '/',
-    })
-  })
 
   return response
 }
