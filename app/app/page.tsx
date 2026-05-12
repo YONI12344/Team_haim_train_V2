@@ -14,7 +14,7 @@ export default async function AthleteDashboard() {
 
   const profile = await getProfile()
   // Don't redirect to /login when user is authenticated - that causes an infinite loop
-  // Handle null profile gracefully with fallback values
+  // Handle null profile gracefully with a fallback value
 
   const today = new Date()
   const todayISO = formatDateISO(today)
