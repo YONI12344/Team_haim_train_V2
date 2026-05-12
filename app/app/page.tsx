@@ -13,6 +13,7 @@ export default async function AthleteDashboard() {
   if (!user) redirect('/login')
 
   const profile = await getProfile()
+  if (profile?.role === 'coach') redirect('/app/coach')
   // Don't redirect to /login when user is authenticated - that causes an infinite loop
   // Handle null profile gracefully with a fallback value
 
