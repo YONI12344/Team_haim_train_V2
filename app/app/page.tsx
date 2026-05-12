@@ -13,7 +13,8 @@ export default async function AthleteDashboard() {
   if (!user) redirect('/login')
 
   const profile = await getProfile()
-  if (!profile) redirect('/login')
+  // Don't redirect to /login when user is authenticated - that causes an infinite loop
+  // Handle null profile gracefully with a fallback value
 
   const today = new Date()
   const todayISO = formatDateISO(today)
@@ -71,7 +72,7 @@ export default async function AthleteDashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="mb-1 text-3xl font-extrabold text-navy">
-          שלום {profile.full_name || 'ספורטאי'}
+          שלום {profile?.full_name || 'ספורטאי'}
         </h1>
         <p className="text-muted">הנה סיכום האימונים שלך השבוע</p>
       </div>
