@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=no_code`)
   }
 
-  const response = NextResponse.redirect(`${origin}/app`)
+  // We must collect cookies BEFORE creating the redirect response
+  const cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[] = []
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,15 +22,10 @@ export async function GET(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, {
-              ...options,
-              sameSite: 'lax',
-              secure: process.env.NODE_ENV === 'production',
-              httpOnly: true,
-              path: '/',
-            })
+        setAll(incoming) {
+          // Collect cookies — apply them to the response after we build it
+          incoming.forEach(({ name, value, options }) => {
+            cookiesToSet.push({ name, value, options: options as Record<string, unknown> })
           })
         },
       },
@@ -42,6 +38,20 @@ export async function GET(request: NextRequest) {
     console.error('Callback error:', error.message)
     return NextResponse.redirect(`${origin}/login?error=auth_failed`)
   }
+
+  // Build the redirect response AFTER session exchange so all cookies are known
+  const response = NextResponse.redirect(`${origin}/app`)
+
+  // Apply all session cookies to the response
+  cookiesToSet.forEach(({ name, value, options }) => {
+    response.cookies.set(name, value, {
+      ...options,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      path: '/',
+    })
+  })
 
   return response
 }
