@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/Button'
 import { Card } from '@/components/Card'
 import type { AthleteProfile, Profile } from '@/lib/types'
-import { AtSign, Flag, Save, Target, Trophy, User } from 'lucide-react'
+import { AtSign, Flag, Save, Trophy, User } from 'lucide-react'
 
 type Props = {
   profile: Profile | null

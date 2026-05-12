@@ -2,9 +2,8 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Calendar, Grid3X3 } from 'lucide-react'
 import Link from 'next/link'
-import { WorkoutPill } from './WorkoutPill'
 import { WorkoutEditor } from './WorkoutEditor'
-import type { Workout, WorkoutType, WorkoutStatus } from '@/lib/types'
+import type { Workout, WorkoutStatus } from '@/lib/types'
 
 const HEBREW_DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']
 const HEBREW_MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר']
@@ -171,11 +170,11 @@ export function CalendarView({ workouts, isCoach, athleteId }: CalendarViewProps
                             )
                           } catch { return null }
                         })()}
-                        {w.planned_distance_km && <p className="text-gray-500 mt-1">{w.planned_distance_km} ק"מ</p>}
+                        {w.planned_distance_km && <p className="text-gray-500 mt-1">{w.planned_distance_km} ק&quot;מ</p>}
                         {w.status === 'completed' && (
                           <div className="mt-1.5 pt-1.5 border-t border-gray-200">
                             <p className="text-green-600 font-medium">הושלם ✓</p>
-                            {w.actual_distance_km && <p className="text-gray-500">{w.actual_distance_km} ק"מ בפועל</p>}
+                            {w.actual_distance_km && <p className="text-gray-500">{w.actual_distance_km} ק&quot;מ בפועל</p>}
                             {w.actual_pace && <p className="text-gray-500">טמפו: {w.actual_pace}</p>}
                             {w.athlete_notes && <p className="text-gray-500 italic">{w.athlete_notes}</p>}
                           </div>

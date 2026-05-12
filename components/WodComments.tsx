@@ -38,8 +38,8 @@ export default function WodComments({ wodId, comments }: Props) {
     try {
       await postWodComment(wodId, content.trim())
       setContent('')
-    } catch (e: any) {
-      setError(e.message || 'שגיאה בשמירת ההערה')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'שגיאה בשמירת ההערה')
     } finally {
       setLoading(false)
     }
