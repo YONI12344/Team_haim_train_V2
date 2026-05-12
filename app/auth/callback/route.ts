@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=no_code`)
   }
 
-  let response = NextResponse.redirect(`${origin}/app`)
+  const response = NextResponse.redirect(`${origin}/app`)
 
   // Add cache headers to prevent stale data
   response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
@@ -27,15 +27,17 @@ export async function GET(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          response = NextResponse.redirect(`${origin}/app`)
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value, options }) => {
+            // Set cookies on the request for server components to read
+            request.cookies.set(name, value)
+            // Set cookies on the response to send to the browser
             response.cookies.set(name, value, {
               ...options,
-              httpOnly: true,
               path: '/',
+              sameSite: 'lax',
+              secure: process.env.NODE_ENV === 'production',
             })
-          )
+          })
         },
       },
     }
