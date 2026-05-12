@@ -25,7 +25,7 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { user } } = await supabase.auth.getUser()
 
 // session refreshed — layout handles auth redirect
   return supabaseResponse
