@@ -10,10 +10,10 @@ export default async function LoginPage({
   const params = await searchParams
   const supabase = await createClient()
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (session) redirect('/app')
+  if (user) redirect('/app')
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col">
