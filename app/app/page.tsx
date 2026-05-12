@@ -7,6 +7,10 @@ import { WodSection } from '@/components/WodSection'
 import type { Workout } from '@/lib/types'
 import { Activity, Gauge, HeartPulse, Route } from 'lucide-react'
 
+// Force dynamic rendering to prevent stale profile data
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function AthleteDashboard() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
