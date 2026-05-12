@@ -3,6 +3,10 @@ import { createClient } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/auth'
 import { AppShell } from '@/components/AppShell'
 
+// Force dynamic rendering to prevent stale profile data
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
