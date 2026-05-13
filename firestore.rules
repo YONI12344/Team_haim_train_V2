@@ -1,3 +1,9 @@
+// NOTE: This project uses Supabase (PostgreSQL) for its primary database.
+// These Firestore rules are provided for reference and apply only if Firebase
+// Firestore is also used. For Supabase, configure equivalent RLS policies in
+// the Supabase dashboard.
+// Deploy with: firebase deploy --only firestore:rules
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {

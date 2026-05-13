@@ -72,7 +72,6 @@ export default function LoginPage() {
             type="button"
             onClick={handleGoogleLogin}
             disabled={googleLoading || loading}
-            aria-label="התחבר עם Google"
             className="w-full flex items-center justify-center gap-3 bg-white text-gray-700 font-semibold py-3 rounded-xl transition-all duration-200 hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {/* Google logo SVG */}

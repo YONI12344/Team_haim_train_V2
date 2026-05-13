@@ -60,9 +60,10 @@ export function formatPaceString(pace: number | null): string {
 /**
  * Fetch the existing log for a workout.
  * Returns null when no data exists or on any error.
+ * Validates that the workout belongs to the given athleteId before returning.
  */
 export async function getLogForWorkout(
-  _athleteId: string,
+  athleteId: string,
   workoutId: string,
 ): Promise<WorkoutLog | null> {
   try {
@@ -74,6 +75,8 @@ export async function getLogForWorkout(
       .single()
 
     if (error || !data) return null
+    // Security: only return the log if it belongs to the requesting athlete
+    if (data.athlete_id !== athleteId) return null
 
     return {
       workoutId: data.id,
