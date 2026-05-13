@@ -5,9 +5,10 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Card } from '@/components/Card'
 import { WorkoutPill } from '@/components/WorkoutPill'
+import { CalendarView } from '@/components/CalendarView'
 import { WORKOUT_TYPE_LABELS, HEBREW_DAYS, getWeekDates, formatDateISO, addWeeks } from '@/lib/utils'
 import type { Profile, TrainingPlan, Workout, WorkoutType } from '@/lib/types'
-import { Plus, Trash2, ChevronRight, ChevronLeft, ArrowRight } from 'lucide-react'
+import { Plus, Trash2, ChevronRight, ChevronLeft, ArrowRight, Calendar } from 'lucide-react'
 import Link from 'next/link'
 
 const WORKOUT_TYPES: WorkoutType[] = ['Easy', 'Tempo', 'Intervals', 'Long Run', 'Recovery', 'Strength', 'Race', 'Rest']
@@ -34,6 +35,7 @@ export function AthletePlanEditor({ athlete, plan: initialPlan, workouts: initia
   const [plan, setPlan] = useState(initialPlan)
   const [workouts, setWorkouts] = useState(initialWorkouts)
   const [addingDate, setAddingDate] = useState<string | null>(null)
+  const [showCalendar, setShowCalendar] = useState(true)
   const [newWorkout, setNewWorkout] = useState<NewWorkoutState>({
     workout_type: 'Easy',
     planned_distance_km: '',
@@ -45,36 +47,55 @@ export function AthletePlanEditor({ athlete, plan: initialPlan, workouts: initia
 
   const weekDates = getWeekDates(weekStart)
 
+  // Safe name fallback
+  const athleteName = athlete.full_name || '(ללא שם)'
+
   async function navigateWeek(delta: number) {
     const newWeekStart = addWeeks(weekStart, delta)
     setWeekStart(newWeekStart)
 
     const weekStartStr = formatDateISO(newWeekStart)
-    let { data: existingPlan } = await supabase
-      .from('training_plans')
-      .select('*')
-      .eq('athlete_id', athlete.id)
-      .eq('week_start', weekStartStr)
-      .single()
+    let existingPlan = null
+    try {
+      const { data } = await supabase
+        .from('training_plans')
+        .select('*')
+        .eq('athlete_id', athlete.id)
+        .eq('week_start', weekStartStr)
+        .single()
+      existingPlan = data
+    } catch {
+      // No plan yet for this week
+    }
 
     if (!existingPlan) {
-      const { data: newPlan } = await supabase
-        .from('training_plans')
-        .insert({ athlete_id: athlete.id, week_start: weekStartStr })
-        .select()
-        .single()
-      existingPlan = newPlan
+      try {
+        const { data: newPlan } = await supabase
+          .from('training_plans')
+          .insert({ athlete_id: athlete.id, week_start: weekStartStr })
+          .select()
+          .single()
+        existingPlan = newPlan
+      } catch (err) {
+        console.error('Failed to create plan:', err)
+        toast.error('שגיאה ביצירת תוכנית')
+      }
     }
 
     setPlan(existingPlan)
 
     if (existingPlan) {
-      const { data: wk } = await supabase
-        .from('workouts')
-        .select('*')
-        .eq('plan_id', existingPlan.id)
-        .order('workout_date')
-      setWorkouts(wk || [])
+      try {
+        const { data: wk } = await supabase
+          .from('workouts')
+          .select('*')
+          .eq('plan_id', existingPlan.id)
+          .order('workout_date')
+        setWorkouts(wk || [])
+      } catch (err) {
+        console.error('Failed to load workouts:', err)
+        setWorkouts([])
+      }
     } else {
       setWorkouts([])
     }
@@ -82,64 +103,86 @@ export function AthletePlanEditor({ athlete, plan: initialPlan, workouts: initia
 
   async function addWorkout(date: string) {
     if (!plan) return
-    const { data, error } = await supabase
-      .from('workouts')
-      .insert({
-        plan_id: plan.id,
-        athlete_id: athlete.id,
-        workout_date: date,
-        workout_type: newWorkout.workout_type,
-        planned_distance_km: newWorkout.planned_distance_km ? parseFloat(newWorkout.planned_distance_km) : null,
-        planned_pace: newWorkout.planned_pace ? parseFloat(newWorkout.planned_pace) : null,
-        planned_duration_min: newWorkout.planned_duration_min ? parseInt(newWorkout.planned_duration_min) : null,
-        planned_intensity: newWorkout.planned_intensity ? parseInt(newWorkout.planned_intensity) : null,
-        planned_notes: newWorkout.planned_notes || null,
-        status: 'planned',
-      })
-      .select()
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('workouts')
+        .insert({
+          plan_id: plan.id,
+          athlete_id: athlete.id,
+          workout_date: date,
+          workout_type: newWorkout.workout_type,
+          planned_distance_km: newWorkout.planned_distance_km ? parseFloat(newWorkout.planned_distance_km) : null,
+          planned_pace: newWorkout.planned_pace ? parseFloat(newWorkout.planned_pace) : null,
+          planned_duration_min: newWorkout.planned_duration_min ? parseInt(newWorkout.planned_duration_min) : null,
+          planned_intensity: newWorkout.planned_intensity ? parseInt(newWorkout.planned_intensity) : null,
+          planned_notes: newWorkout.planned_notes || null,
+          status: 'planned',
+        })
+        .select()
+        .single()
 
-    if (error) {
+      if (error) {
+        toast.error('שגיאה בהוספת אימון')
+      } else if (data) {
+        setWorkouts(w => [...w, data])
+        setAddingDate(null)
+        setNewWorkout({ workout_type: 'Easy', planned_distance_km: '', planned_pace: '', planned_duration_min: '', planned_intensity: '', planned_notes: '' })
+        toast.success('אימון נוסף!')
+      }
+    } catch (err) {
+      console.error('addWorkout error:', err)
       toast.error('שגיאה בהוספת אימון')
-    } else if (data) {
-      setWorkouts(w => [...w, data])
-      setAddingDate(null)
-      setNewWorkout({ workout_type: 'Easy', planned_distance_km: '', planned_pace: '', planned_duration_min: '', planned_intensity: '', planned_notes: '' })
-      toast.success('אימון נוסף!')
     }
   }
 
   async function deleteWorkout(id: string) {
-    const { error } = await supabase.from('workouts').delete().eq('id', id)
-    if (error) toast.error('שגיאה במחיקה')
-    else {
-      setWorkouts(w => w.filter(x => x.id !== id))
-      toast.success('אימון נמחק')
+    try {
+      const { error } = await supabase.from('workouts').delete().eq('id', id)
+      if (error) toast.error('שגיאה במחיקה')
+      else {
+        setWorkouts(w => w.filter(x => x.id !== id))
+        toast.success('אימון נמחק')
+      }
+    } catch (err) {
+      console.error('deleteWorkout error:', err)
+      toast.error('שגיאה במחיקה')
     }
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Link href="/app/coach" className="text-gray-400 hover:text-navy transition-colors">
-          <ArrowRight className="w-5 h-5" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-navy">עריכת תוכנית — {athlete.full_name}</h1>
-          <p className="text-gray-500 text-sm">ניהול אימונים שבועיים</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link href="/app/coach" className="text-gray-400 hover:text-navy transition-colors">
+            <ArrowRight className="w-5 h-5" />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-navy">עריכת תוכנית — {athleteName}</h1>
+            <p className="text-gray-500 text-sm">ניהול אימונים שבועיים</p>
+          </div>
         </div>
+        <button
+          onClick={() => setShowCalendar(v => !v)}
+          className="flex items-center gap-2 text-sm text-navy font-medium border border-gray-200 px-3 py-1.5 rounded-xl hover:bg-gray-50 transition-colors"
+        >
+          <Calendar className="w-4 h-4" />
+          {showCalendar ? 'הסתר לוח' : 'הצג לוח'}
+        </button>
       </div>
+
+      {/* Calendar overview */}
+      {showCalendar && <CalendarView workouts={workouts} isCoach />}
 
       {/* Week navigation */}
       <Card>
         <div className="flex items-center justify-between">
-          <button onClick={() => navigateWeek(-1)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+          <button onClick={() => navigateWeek(-1)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors" aria-label="שבוע קודם">
             <ChevronRight className="w-5 h-5 text-navy" />
           </button>
           <div className="text-center">
             <p className="font-semibold text-navy">{formatDateISO(weekStart)} — {formatDateISO(weekDates[6])}</p>
           </div>
-          <button onClick={() => navigateWeek(1)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+          <button onClick={() => navigateWeek(1)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors" aria-label="שבוע הבא">
             <ChevronLeft className="w-5 h-5 text-navy" />
           </button>
         </div>
@@ -162,7 +205,7 @@ export function AthletePlanEditor({ athlete, plan: initialPlan, workouts: initia
                 <div key={w.id} className="mb-2 p-2 bg-gray-50 rounded-xl">
                   <div className="flex items-center justify-between">
                     <WorkoutPill type={w.workout_type as WorkoutType} />
-                    <button onClick={() => deleteWorkout(w.id)} className="text-red-400 hover:text-red-600 transition-colors">
+                    <button onClick={() => deleteWorkout(w.id)} className="text-red-400 hover:text-red-600 transition-colors" aria-label="מחק אימון">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>

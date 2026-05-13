@@ -9,13 +9,17 @@ export default async function CoachDashboard() {
   await requireCoach()
   const supabase = await createClient()
 
-  const { data: athletes } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('role', 'athlete')
-    .order('full_name')
-
-  const athleteList = athletes || []
+  let athleteList: Record<string, unknown>[] = []
+  try {
+    const { data: athletes } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'athlete')
+      .order('full_name')
+    athleteList = athletes || []
+  } catch (err) {
+    console.error('Failed to load athletes:', err)
+  }
 
   // Get this week's workout completions for each athlete
   const now = new Date()
@@ -23,13 +27,19 @@ export default async function CoachDashboard() {
   weekStart.setDate(now.getDate() - now.getDay())
   const weekStartStr = weekStart.toISOString().split('T')[0]
 
-  const { data: weekWorkouts } = await supabase
-    .from('workouts')
-    .select('athlete_id, status')
-    .gte('workout_date', weekStartStr)
+  let weekWorkouts: { athlete_id: string; status: string }[] = []
+  try {
+    const { data } = await supabase
+      .from('workouts')
+      .select('athlete_id, status')
+      .gte('workout_date', weekStartStr)
+    weekWorkouts = data || []
+  } catch (err) {
+    console.error('Failed to load week workouts:', err)
+  }
 
   const workoutMap: Record<string, { total: number; completed: number }> = {}
-  for (const w of (weekWorkouts || [])) {
+  for (const w of weekWorkouts) {
     if (!workoutMap[w.athlete_id]) workoutMap[w.athlete_id] = { total: 0, completed: 0 }
     workoutMap[w.athlete_id].total++
     if (w.status === 'completed') workoutMap[w.athlete_id].completed++
@@ -54,16 +64,19 @@ export default async function CoachDashboard() {
           </div>
         ) : (
           athleteList.map(athlete => {
-            const stats = workoutMap[athlete.id] || { total: 0, completed: 0 }
+            const id = athlete.id as string
+            const fullName = (athlete.full_name as string | null) || '(ללא שם)'
+            const groupName = athlete.group_name as string | null
+            const stats = workoutMap[id] || { total: 0, completed: 0 }
             const pct = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0
             return (
-              <Link key={athlete.id} href={`/app/coach/athletes/${athlete.id}`}>
+              <Link key={id} href={`/app/coach/athletes/${id}`}>
                 <Card className="hover:border-gold/50 border-2 border-transparent transition-all cursor-pointer h-full">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h3 className="font-semibold text-navy text-lg">{athlete.full_name || '(ללא שם)'}</h3>
-                      {athlete.group_name && (
-                        <p className="text-sm text-gray-400">{athlete.group_name}</p>
+                      <h3 className="font-semibold text-navy text-lg">{fullName}</h3>
+                      {groupName && (
+                        <p className="text-sm text-gray-400">{groupName}</p>
                       )}
                     </div>
                     <ChevronLeft className="w-5 h-5 text-gray-300" />

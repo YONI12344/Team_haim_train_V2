@@ -10,11 +10,17 @@ export default async function AthletesPage() {
   await requireCoach()
   const supabase = await createClient()
 
-  const { data: athletes } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('role', 'athlete')
-    .order('full_name')
+  let athletes: { id: string; full_name: string | null; group_name: string | null }[] = []
+  try {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'athlete')
+      .order('full_name')
+    athletes = data || []
+  } catch (err) {
+    console.error('Failed to load athletes:', err)
+  }
 
   return (
     <div className="space-y-8">
@@ -30,7 +36,7 @@ export default async function AthletesPage() {
 
       <Card>
         <h2 className="text-lg font-semibold text-navy mb-4">כל הספורטאים</h2>
-        {!athletes || athletes.length === 0 ? (
+        {athletes.length === 0 ? (
           <EmptyState title="אין ספורטאים" description="הזמן ספורטאים באמצעות הטופס למעלה." />
         ) : (
           <div className="divide-y divide-gray-100">

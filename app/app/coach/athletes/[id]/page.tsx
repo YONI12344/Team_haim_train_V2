@@ -9,38 +9,62 @@ export default async function AthletePlanPage({ params }: { params: Promise<{ id
   await requireCoach()
   const supabase = await createClient()
 
-  const { data: athlete } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', id)
-    .single()
+  let athlete = null
+  try {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', id)
+      .single()
+    athlete = data
+  } catch (err) {
+    console.error('Failed to load athlete:', err)
+  }
 
   if (!athlete) notFound()
 
   const weekStart = getWeekStart()
 
   // Get or create training plan
-  let { data: plan } = await supabase
-    .from('training_plans')
-    .select('*')
-    .eq('athlete_id', id)
-    .eq('week_start', formatDateISO(weekStart))
-    .single()
-
-  if (!plan) {
-    const { data: newPlan } = await supabase
+  let plan = null
+  try {
+    const { data: existingPlan } = await supabase
       .from('training_plans')
-      .insert({ athlete_id: id, week_start: formatDateISO(weekStart) })
-      .select()
+      .select('*')
+      .eq('athlete_id', id)
+      .eq('week_start', formatDateISO(weekStart))
       .single()
-    plan = newPlan
+    plan = existingPlan
+  } catch {
+    // No plan yet – will be created below
   }
 
-  const { data: workouts } = plan ? await supabase
-    .from('workouts')
-    .select('*')
-    .eq('plan_id', plan.id)
-    .order('workout_date') : { data: [] }
+  if (!plan) {
+    try {
+      const { data: newPlan } = await supabase
+        .from('training_plans')
+        .insert({ athlete_id: id, week_start: formatDateISO(weekStart) })
+        .select()
+        .single()
+      plan = newPlan
+    } catch (err) {
+      console.error('Failed to create training plan:', err)
+    }
+  }
 
-  return <AthletePlanEditor athlete={athlete} plan={plan} workouts={workouts || []} initialWeekStart={formatDateISO(weekStart)} />
+  let workouts = []
+  if (plan) {
+    try {
+      const { data } = await supabase
+        .from('workouts')
+        .select('*')
+        .eq('plan_id', plan.id)
+        .order('workout_date')
+      workouts = data || []
+    } catch (err) {
+      console.error('Failed to load workouts:', err)
+    }
+  }
+
+  return <AthletePlanEditor athlete={athlete} plan={plan} workouts={workouts} initialWeekStart={formatDateISO(weekStart)} />
 }
